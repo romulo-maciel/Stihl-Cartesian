@@ -14,11 +14,7 @@ cnc = serial.Serial('/dev/grbl', 115200)
 aruco_detector = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50))
 
 
-for y_cnc in range( 0, CNC_HEIGHT,  50):
-    cnc.write(f"G0 X{0} Y{y_cnc}\n".encode())
-    print(f"Posicionando em ({0}, {y_cnc}).")
-    time.sleep(1.5) 
-
+def detector(x_cnc = 0, y_cnc = 0):
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -39,7 +35,7 @@ for y_cnc in range( 0, CNC_HEIGHT,  50):
                         (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
         cv2.imshow("Calibration", frame_display)
-        key = cv2.waitKey(1) & 0xFF
+        # key = cv2.waitKey(1) & 0xFF
 
         # Capturar posição
         if ids is not None and ARUCO_ID in ids:
@@ -52,12 +48,34 @@ for y_cnc in range( 0, CNC_HEIGHT,  50):
             break
         else:
             print("Marcador ArUco não detectado. Tente novamente.")
+            cnc.write(f"G0 X{(x_cnc + 1) if x_cnc > 0 else 0} Y{(y_cnc + 1) if y_cnc > 0 else 0}\n".encode())
             time.sleep(1)  
 
-    cap.release()
-    cv2.destroyAllWindows()
-    np.save("calib_data.npy", calib_data)
-    print("Dados salvos em calib_data.npy")
+for y_cnc in range( 0, CNC_HEIGHT,  50):
+    cnc.write(f"G0 X{0} Y{y_cnc}\n".encode())
+    print(f"Posicionando em ({0}, {y_cnc}).")
+    time.sleep(1.5) 
+    detector(0, y_cnc)
 
-if __name__ == "__main__":
-    collect_calibration_data()
+for x_cnc in range(0, CNC_WIDTH, 50):
+    cnc.write(f"G0 X{x_cnc} Y{CNC_HEIGHT}\n".encode())
+    print(f"Posicionando em ({x_cnc}, {CNC_HEIGHT}).")
+    time.sleep(1.5) 
+    detector(x_cnc, CNC_HEIGHT)
+
+for y_cnc in range(CNC_HEIGHT, 0, -50):
+    cnc.write(f"G0 X{CNC_WIDTH} Y{y_cnc}\n".encode())
+    print(f"Posicionando em ({CNC_WIDTH}, {y_cnc}).")
+    time.sleep(1.5) 
+    detector(CNC_WIDTH, y_cnc)
+
+for x_cnc in range(CNC_WIDTH, 0, -50):
+    cnc.write(f"G0 X{x_cnc} Y{0}\n".encode())
+    print(f"Posicionando em ({x_cnc}, {0}).")
+    time.sleep(1.5) 
+    detector(x_cnc, 0)
+
+cap.release()
+cv2.destroyAllWindows()
+np.save("calib_data.npy", calib_data)
+print("Dados salvos em calib_data.npy")
