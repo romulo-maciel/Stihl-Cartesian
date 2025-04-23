@@ -1,4 +1,4 @@
-#!/home/zap/cartesian/bin/python
+#!/home/zap/Stihl-Cartesian/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

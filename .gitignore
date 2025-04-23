@@ -1,31 +1,7 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
 # Python virtual environment directories
-venv/
-env/
-.venv/
-.env/
-ENV/
-
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-*.egg
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+bin/
+include/
+lib/
+lib64/
+pyvenv.cfg

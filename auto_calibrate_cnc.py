@@ -4,8 +4,8 @@ import cv2
 import serial
 import time
 
-CNC_WIDTH = 1000  # Medida da barra onde está preso o end effector em mm
-CNC_HEIGHT = 1000  # Comprimento do frame da CNC em mm
+CNC_WIDTH = 300  # Medida da barra onde está preso o end effector em mm
+CNC_HEIGHT = 565  # Comprimento do frame da CNC em mm
 
 ARUCO_ID = 8  # ID do marcador no end effector
 calib_data = {"cnc": [], "cam": []}
