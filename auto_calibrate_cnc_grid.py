@@ -5,20 +5,19 @@ import time
 import argparse
 
 # =============================================================================
-# Automatic CNC Calibration with ArUco Marker Detection
-# This script moves the CNC to a grid of points and attempts to detect an
-# ArUco marker at each point within a specified timeout and attempt limit.
-# If detection fails for a point, it skips to the next point.
+# Automatic CNC Calibration with ArUco Marker Detection - Full Grid
+# This script moves the CNC through a full grid of points (not just borders)
+# and attempts to detect an ArUco marker at each point within a timeout.
 # =============================================================================
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Auto Calibrate CNC with ArUco marker')
+    parser = argparse.ArgumentParser(description='Auto Calibrate CNC full-grid with ArUco marker')
     parser.add_argument('--width', type=int, default=300, help='CNC width (mm)')
     parser.add_argument('--height', type=int, default=565, help='CNC height (mm)')
     parser.add_argument('--spacing', type=int, default=50, help='Grid spacing (mm)')
     parser.add_argument('--aruco-id', type=int, default=2, help='ID of the ArUco marker')
-    parser.add_argument('--timeout', type=float, default=2.0, help='Max detection time per point (s)')
-    parser.add_argument('--attempts', type=int, default=30, help='Max detection attempts per point')
+    parser.add_argument('--timeout', type=float, default=3.0, help='Max detection time per point (s)')
+    parser.add_argument('--attempts', type=int, default=200, help='Max detection attempts per point')
     parser.add_argument('--port', type=str, default='/dev/grbl', help='Serial port for CNC')
     parser.add_argument('--baud', type=int, default=115200, help='Baud rate for CNC serial')
     return parser.parse_args()
@@ -58,7 +57,7 @@ def detector(cap, aruco_detector, x_cnc, y_cnc, aruco_id, timeout, max_attempts,
             attempts += 1
             elapsed = time.time() - start_time
             if elapsed > timeout or attempts >= max_attempts:
-                print(f"[TIMEOUT] No marker detected at CNC({x_cnc},{y_cnc}) after {elapsed:.1f}s. Moving on.")
+                print(f"[TIMEOUT] No marker detected at CNC({x_cnc},{y_cnc}) after {elapsed:.1f}s. Skipping.")
                 break
 
     return detected
@@ -69,7 +68,7 @@ def main():
 
     # Initialize video capture and serial
     cap = cv2.VideoCapture(2)
-    cnc = serial.Serial(args.port, args.baud)
+    cnc = serial.Serial(args.port, args.baud, timeout=1)
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
     aruco_detector = cv2.aruco.ArucoDetector(aruco_dict)
     calib_data = {'cnc': [], 'cam': []}
@@ -78,29 +77,16 @@ def main():
     cv2.namedWindow("Calibration", cv2.WINDOW_NORMAL)
 
     try:
-        # Traverse left edge, bottom to top
-        for y in range(0, args.height + 1, args.spacing):
-            cnc.write(f"G0 X0 Y{y}\n".encode())
-            time.sleep(1.5)
-            detector(cap, aruco_detector, 0, y, args.aruco_id, args.timeout, args.attempts, calib_data)
+        # Full-grid traversal
+        y_points = range(0, args.height + 1, args.spacing)
+        x_points = range(0, args.width + 1, args.spacing)
 
-        # Traverse top edge, left to right
-        for x in range(args.spacing, args.width + 1, args.spacing):
-            cnc.write(f"G0 X{x} Y{args.height}\n".encode())
-            time.sleep(1.5)
-            detector(cap, aruco_detector, x, args.height, args.aruco_id, args.timeout, args.attempts, calib_data)
-
-        # Traverse right edge, top to bottom
-        for y in range(args.height - args.spacing, -1, -args.spacing):
-            cnc.write(f"G0 X{args.width} Y{y}\n".encode())
-            time.sleep(1.5)
-            detector(cap, aruco_detector, args.width, y, args.aruco_id, args.timeout, args.attempts, calib_data)
-
-        # Traverse bottom edge, right to left
-        for x in range(args.width - args.spacing, 0, -args.spacing):
-            cnc.write(f"G0 X{x} Y0\n".encode())
-            time.sleep(1.5)
-            detector(cap, aruco_detector, x, 0, args.aruco_id, args.timeout, args.attempts, calib_data)
+        for y in y_points:
+            for x in x_points:
+                cnc.write(f"G0 X{x} Y{y}\n".encode())
+                time.sleep(2.5)  # give CNC time to move
+                detector(cap, aruco_detector, x, y, args.aruco_id,
+                         args.timeout, args.attempts, calib_data)
 
     except KeyboardInterrupt:
         print("[INFO] Calibration interrupted by user.")
@@ -109,7 +95,7 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
         np.save("calib_data.npy", calib_data)
-        print(f"[INFO] Calibration data saved to calib_data.npy ({len(calib_data['cnc'])} points)")
+        print(f"[INFO] Calibration data saved to calib_data.npy ({len(calib_data['cnc'])} points)!")
         cnc.close()
 
 if __name__ == '__main__':

@@ -27,7 +27,7 @@ while True:
     corners, ids, rejected = detector.detectMarkers(gray)
 
     if ids is not None:
-        rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(
+        rvecs, tvecs, _ = detector.estimatePoseSingleMarkers(
             corners, marker_length, camera_matrix, dist_coeffs
         )
 
