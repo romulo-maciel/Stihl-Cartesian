@@ -3,6 +3,8 @@ import cv2.aruco as aruco
 import numpy as np
 
 cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 camera_matrix = np.array([
     [1000, 0, 320],
